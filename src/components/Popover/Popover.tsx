@@ -42,9 +42,10 @@ interface PopoverProps {
 }
 
 const text = {
-    suggestions: "Suggestions",
+    suggestions: "Sugerencias",
+    productsTitle: "Productos",
     aria: "Search term suggestions",
-    all: "View all",
+    all: "Ver todo",
 };
 
 const Popover: FC<PopoverProps> = ({
@@ -199,6 +200,13 @@ const Popover: FC<PopoverProps> = ({
                 paddingBottom="0px"
                 alignSelf="start"
             >
+                <StyledText
+                    customFontWeight={600}
+                    className={stylingIds.productsHeader}
+                >
+                    {text.productsTitle}
+                </StyledText>
+
                 {products.map((product, index) => {
                     //render
                     if (index < pageSize) {
