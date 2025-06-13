@@ -44,8 +44,9 @@ interface PopoverProps {
 const text = {
     suggestions: "Sugerencias",
     productsTitle: "Productos",
-    aria: "Search term suggestions",
+    aria: "Sugerencias de términos de búsqueda",
     all: "Ver todo",
+    unitPrice: "Precio/Unidad",
 };
 
 const Popover: FC<PopoverProps> = ({
@@ -62,6 +63,13 @@ const Popover: FC<PopoverProps> = ({
 }) => {
     const products = response?.data?.productSearch.items ?? [];
     const suggestions = response?.data?.productSearch.suggestions ?? [];
+    const total = Number(response?.data?.productSearch.total_count ?? 0);
+
+    const elements = formRef.current?.elements as HTMLFormControlsCollection & {
+        search: HTMLInputElement;
+    };
+
+    const searchTerm = elements?.search?.value.trim() || "";
 
     const containerStyling = `
             display: flex;
@@ -119,135 +127,65 @@ const Popover: FC<PopoverProps> = ({
         }
     });
 
-    const calculateWidth = () => {
-        if (isMobile) {
-            return "100%";
-        } else {
-            return suggestions.length > 0 ? "700px" : "530px";
-        }
-    };
-
-    const getHeaderHeight = () => {
-        // if we are unable to find a header height, 150 is the average used height
-        return resultsRef.current?.getBoundingClientRect().top ?? 150;
-    };
-
-    const calculatePopoverHeight = () => {
-        return isMobile ? `calc(100vh - ${getHeaderHeight()}px)` : "auto";
-    };
-
     if (products.length <= 0 || !active || !minQueryLengthHit) {
         return <></>;
     }
 
     return (
-        <Grid
-            className={stylingIds.popover}
-            width={calculateWidth()}
-            height={calculatePopoverHeight()}
-            backgroundColor="#fff"
-            gridTemplateAreas={
-                isMobile
-                    ? '"suggestions""previews""viewall"'
-                    : '"suggestions previews" "viewall viewall"'
-            }
-            rowGap="16px"
-            columnGap={suggestions.length > 0 ? "16px" : "0px"}
-            gridTemplateColumns={isMobile ? "1fr" : "auto 3fr"}
-            gridTemplateRows={isMobile ? "auto 1fr 36px" : "1fr 36px"}
-            overflowY={isMobile ? "scroll" : "auto"}
-            overflowX="hidden"
-        >
+        <Grid className={stylingIds.popover}>
             {/* the suggestions element is currently not used */}
             {suggestions.length > 0 && (
-                <Grid
-                    className={stylingIds.suggestions}
-                    gridArea="suggestions"
-                    width={isMobile ? "auto" : "max-content"}
-                    maxWidth={isMobile ? "none" : "150px"}
-                    gridTemplateRows={
-                        isMobile
-                            ? `repeat(${suggestions.length + 1}, 3.5rem)` // +1 to account for "suggestions" row
-                            : `repeat(${pageSize}, 1fr) minmax(0px, 20px);`
-                    }
-                    padding={
-                        isMobile ? "16px 32px 0px 32px" : "16px 0px 8px 16px"
-                    }
-                    margin={isMobile ? "auto 0px" : "unset"}
-                    textAlign={isMobile ? "center" : "unset"}
-                >
-                    <StyledText
-                        customFontWeight={600}
-                        className={stylingIds.suggestionsHeader}
-                    >
+                <Grid className={stylingIds.suggestions}>
+                    <StyledText className={stylingIds.suggestionsHeader}>
                         {text.suggestions}
                     </StyledText>
                     {Suggestions}
                 </Grid>
             )}
 
-            <Grid
-                className={stylingIds.products}
-                gridArea="previews"
-                gridTemplateColumns={"1fr 1fr"}
-                gridTemplateRows={
-                    isMobile
-                        ? `repeat(${Math.ceil(products.length / 2)}, 1fr)`
-                        : "repeat(3, 1fr)"
-                }
-                gap="4px"
-                padding={isMobile ? "0px 16px" : "16px"}
-                paddingBottom="0px"
-                alignSelf="start"
-            >
-                <StyledText
-                    customFontWeight={600}
-                    className={stylingIds.productsHeader}
-                >
+            <Grid className={stylingIds.products}>
+                <StyledText className={stylingIds.productsHeader}>
                     {text.productsTitle}
                 </StyledText>
 
-                {products.map((product, index) => {
-                    //render
-                    if (index < pageSize) {
-                        return (
-                            <ProductItem
-                                key={product.product.sku}
-                                product={product}
-                                updateAndSubmit={updateAndSubmit}
-                                currencySymbol={currencySymbol}
-                                currencyRate={currencyRate}
-                                route={route}
-                            />
-                        );
-                    }
-                })}
-            </Grid>
+                <Grid className={stylingIds.productsWrapper}>
+                    {products.map((product, index) => {
+                        //render
+                        if (index < pageSize) {
+                            return (
+                                <ProductItem
+                                    key={product.product.sku}
+                                    product={product}
+                                    searchTerm={searchTerm}
+                                    updateAndSubmit={updateAndSubmit}
+                                    currencySymbol={currencySymbol}
+                                    currencyRate={currencyRate}
+                                    route={route}
+                                />
+                            );
+                        }
+                    })}
+                </Grid>
 
-            <Grid
-                className={stylingIds.viewAll}
-                gridArea="viewall"
-                alignContent="center"
-                backgroundColor="#f4f4f4"
-                textAlign="center"
-                onClick={() => updateAndSubmit()}
-                hoverColor="#f0f0f0"
-                hoverFontWeight={600}
-                hoverPointer="pointer"
-            >
-                {text.all}
+                <Grid className={stylingIds.viewAll}>
+                    {text.all} {total > pageSize ? `(+${total - pageSize})` : ""}
+                </Grid>
             </Grid>
         </Grid>
     );
 };
 
+const escapeRegExp = (s: string) =>
+  s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const ProductItem: FC<{
     product: Product;
+    searchTerm: string;
     updateAndSubmit: (queryPhrase?: string) => void;
     currencySymbol: string;
     currencyRate: string;
     route?: RedirectRouteFunc;
-}> = ({ product, updateAndSubmit, currencySymbol, currencyRate, route }) => {
+}> = ({ product, searchTerm, updateAndSubmit, currencySymbol, currencyRate, route }) => {
     const onProductClick = () => {
         window.magentoStorefrontEvents?.publish.searchProductClick(
             searchUnitId,
@@ -265,47 +203,32 @@ const ProductItem: FC<{
         ? route({ sku: product.product.sku })
         : product.product.canonical_url;
 
+    const name = htmlStringDecode(product.product.name) || "";
+
+    const parts = searchTerm
+    ? name.split(new RegExp(`(${escapeRegExp(searchTerm)})`, "gi"))
+    : [name];
+
     return (
         <StyledLink href={productUrl || ""} rel="noopener noreferrer">
-            <Grid
-                className={stylingIds.product}
-                gridTemplateAreas={
-                    isMobile
-                        ? '"image" "productName" "price"'
-                        : '"image productName" "image price"'
-                }
-                gridTemplateColumns={isMobile ? "1fr" : "1fr 4fr"}
-                gridTemplateRows={
-                    isMobile ? "1fr 3.5rem 3.5rem" : "repeat(2, 1fr)"
-                }
-                columnGap="16px"
-                alignSelf="center"
-                height={isMobile ? "auto" : "80px"}
-                minWidth={isMobile ? "auto" : "192px"}
-                hoverColor="#f5f5f5"
-                hoverPointer="pointer"
-                padding={isMobile ? "16px" : "unset"}
-                boxSizing={isMobile ? "border-box" : "inherit"}
-                onClick={onProductClick}
-            >
-                <ProductImage
-                    gridArea="image"
-                    customWidth="100%"
-                    src={productImage || NoImageSvg}
-                />
-                <Grid
-                    gridArea="productName"
-                    alignSelf={isMobile ? "center" : "end"}
-                >
-                    <StyledText
-                        customFontWeight={600}
-                        className={stylingIds.productName}
-                    >
-                        {htmlStringDecode(product.product.name)}
+            <Grid className={stylingIds.product} onClick={onProductClick} >
+                <ProductImage className={stylingIds.productsImage} src={productImage || NoImageSvg} />
+                <Grid className={stylingIds.productsInfoWrapper}>
+                    <StyledText className={stylingIds.productName}>
+                        {parts.map((text, i) =>
+                            text.toLowerCase() === searchTerm.toLowerCase() ? (
+                                <span key={i} className={stylingIds.productsNameMark}>
+                                {text}
+                                </span>
+                            ) : (
+                                <React.Fragment key={i}>{text}</React.Fragment>
+                            )
+                        )}
                     </StyledText>
-                </Grid>
-                <Grid gridArea="price" className={stylingIds.productPrice}>
-                    {getProductPrice(product, currencySymbol, currencyRate)}
+                    <Grid className={stylingIds.productPrice}>
+                        {getProductPrice(product, currencySymbol, currencyRate)}
+                    </Grid>
+                    <span className={stylingIds.productPriceUnit}>{text.unitPrice}</span>
                 </Grid>
             </Grid>
         </StyledLink>

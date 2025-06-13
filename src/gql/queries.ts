@@ -35,6 +35,7 @@ const QUICK_SEARCH_QUERY = `
                 total_pages
             }
             suggestions
+            total_count
         }
     }
     ${Product}
