@@ -20,12 +20,12 @@ const stylingIds = {
     productsImage: "livesearch products-image",
     productsInfoWrapper: "livesearch products-info-wrapper",
     productName: "livesearch product-name",
-    productsNameMark: "livesearch product-name-mark",
     productPrice: "livesearch product-price",
     productPriceUnit: "livesearch product-price-unit",
     suggestion: "livesearch suggestion",
     suggestions: "livesearch suggestions-container",
     suggestionsHeader: "livesearch suggestions-header",
+    nameMark: "livesearch name-mark",
     viewAll: "livesearch view-all-footer",
 };
 // ---

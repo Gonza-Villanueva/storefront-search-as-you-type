@@ -71,6 +71,15 @@ const Popover: FC<PopoverProps> = ({
 
     const searchTerm = elements?.search?.value.trim() || "";
 
+    const escapeRegExp = (s: string) =>
+    s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const tokens = searchTerm
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 0)
+    .map(escapeRegExp);
+
     const containerStyling = `
             display: flex;
             right: 0px;
@@ -108,23 +117,34 @@ const Popover: FC<PopoverProps> = ({
     };
 
     // the suggestions element is currently not used
-    const Suggestions = suggestions.map((suggestion, index) => {
-        if (index <= 4) {
-            return (
-                <StyledText
-                    className={stylingIds.suggestion}
-                    customFontSize="90%"
-                    customLineHeight="95%"
-                    key={suggestion}
-                    onClick={() => onSuggestionClick(suggestion)}
-                    hoverColor="#f5f5f5"
-                    hoverPointer="pointer"
-                    padding="4px"
-                >
-                    {htmlStringDecode(suggestion)}
-                </StyledText>
+    const Suggestions = suggestions.slice(0, 5).map((suggestion) => {
+    const decoded = htmlStringDecode(suggestion);
+
+    let fragments: string[] = [decoded ?? ""];
+    if (tokens.length > 0) {
+        const regex = new RegExp(`(${tokens.join("|")})`, "gi");
+        fragments = (decoded ?? "").split(regex);
+    }
+
+    return (
+        <StyledText
+        className={stylingIds.suggestion}
+        key={suggestion}
+        onClick={() => onSuggestionClick(suggestion)}
+        >
+        {fragments.map((part, i) => {
+            const lower = part.toLowerCase();
+            const isMatch = tokens.some((t) => lower === t);
+            return isMatch ? (
+            <span key={i} className={stylingIds.nameMark}>
+                {part}
+            </span>
+            ) : (
+            <React.Fragment key={i}>{part}</React.Fragment>
             );
-        }
+        })}
+        </StyledText>
+    );
     });
 
     if (products.length <= 0 || !active || !minQueryLengthHit) {
@@ -175,9 +195,6 @@ const Popover: FC<PopoverProps> = ({
     );
 };
 
-const escapeRegExp = (s: string) =>
-  s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 const ProductItem: FC<{
     product: Product;
     searchTerm: string;
@@ -204,10 +221,20 @@ const ProductItem: FC<{
         : product.product.canonical_url;
 
     const name = htmlStringDecode(product.product.name) || "";
+    const escapeRegExp = (s: string) =>
+    s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const parts = searchTerm
-    ? name.split(new RegExp(`(${escapeRegExp(searchTerm)})`, "gi"))
-    : [name];
+    const tokens = searchTerm
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 0)
+    .map(escapeRegExp);
+
+    let fragments: string[] = [name];
+    if (tokens.length > 0) {
+        const regex = new RegExp(`(${tokens.join("|")})`, "gi");
+        fragments = name.split(regex);
+    }
 
     return (
         <StyledLink href={productUrl || ""} rel="noopener noreferrer">
@@ -215,15 +242,17 @@ const ProductItem: FC<{
                 <ProductImage className={stylingIds.productsImage} src={productImage || NoImageSvg} />
                 <Grid className={stylingIds.productsInfoWrapper}>
                     <StyledText className={stylingIds.productName}>
-                        {parts.map((text, i) =>
-                            text.toLowerCase() === searchTerm.toLowerCase() ? (
-                                <span key={i} className={stylingIds.productsNameMark}>
-                                {text}
+                        {fragments.map((part, i) => {
+                            const lower = part.toLowerCase();
+                            const isMatch = tokens.some((t) => lower === t);
+                            return isMatch ? (
+                                <span key={i} className={stylingIds.nameMark}>
+                                {part}
                                 </span>
                             ) : (
-                                <React.Fragment key={i}>{text}</React.Fragment>
-                            )
-                        )}
+                                <React.Fragment key={i}>{part}</React.Fragment>
+                            );
+                        })}
                     </StyledText>
                     <Grid className={stylingIds.productPrice}>
                         {getProductPrice(product, currencySymbol, currencyRate)}
