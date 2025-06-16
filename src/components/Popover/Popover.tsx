@@ -46,7 +46,7 @@ const text = {
     productsTitle: "Productos",
     aria: "Sugerencias de términos de búsqueda",
     all: "Ver todo",
-    unitPrice: "Precio/Unidad",
+    unitPrice: "Precio/",
 };
 
 const Popover: FC<PopoverProps> = ({
@@ -236,6 +236,10 @@ const ProductItem: FC<{
         fragments = name.split(regex);
     }
 
+    const unitOfMeasure = product.productView && product.productView.attributes.name === 'sales_unit_of_measure'
+        ? product.productView.attributes.value ?? ''
+        : 'unidad';
+
     return (
         <StyledLink href={productUrl || ""} rel="noopener noreferrer">
             <Grid className={stylingIds.product} onClick={onProductClick} >
@@ -257,7 +261,7 @@ const ProductItem: FC<{
                     <Grid className={stylingIds.productPrice}>
                         {getProductPrice(product, currencySymbol, currencyRate)}
                     </Grid>
-                    <span className={stylingIds.productPriceUnit}>{text.unitPrice}</span>
+                    <span className={stylingIds.productPriceUnit}>{text.unitPrice}{unitOfMeasure}</span>
                 </Grid>
             </Grid>
         </StyledLink>

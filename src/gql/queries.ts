@@ -28,6 +28,13 @@ const QUICK_SEARCH_QUERY = `
         ){
             items {
                 ...Product
+                productView {
+                    name
+                    attributes {
+                        name
+                        value
+                    }
+                }
             }
             page_info {
                 current_page

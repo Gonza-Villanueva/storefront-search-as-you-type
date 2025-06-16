@@ -161,6 +161,12 @@ export interface Product {
         custom_attributes: null | CustomAttribute;
         add_to_cart_allowed: null | boolean;
     };
+    productView: {
+        attributes: {
+            name: null | string;
+            value: null | string;
+        }
+    }
     highlights: Array<Highlights>;
 }
 
