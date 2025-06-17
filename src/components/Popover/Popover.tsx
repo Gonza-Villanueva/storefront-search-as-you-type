@@ -169,21 +169,19 @@ const Popover: FC<PopoverProps> = ({
                 </StyledText>
 
                 <Grid className={stylingIds.productsWrapper}>
-                    {products.map((product, index) => {
+                    {products.slice(0, pageSize).map((product) => {
                         //render
-                        if (index < pageSize) {
-                            return (
-                                <ProductItem
-                                    key={product.product.sku}
-                                    product={product}
-                                    searchTerm={searchTerm}
-                                    updateAndSubmit={updateAndSubmit}
-                                    currencySymbol={currencySymbol}
-                                    currencyRate={currencyRate}
-                                    route={route}
-                                />
-                            );
-                        }
+                        return (
+                            <ProductItem
+                                key={product.product.sku}
+                                product={product}
+                                searchTerm={searchTerm}
+                                updateAndSubmit={updateAndSubmit}
+                                currencySymbol={currencySymbol}
+                                currencyRate={currencyRate}
+                                route={route}
+                            />
+                        )
                     })}
                 </Grid>
 
